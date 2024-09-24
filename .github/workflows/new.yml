@@ -1,0 +1,49 @@
+name: Build & Test
+on: [pull_request, push]
+
+jobs:
+  security_scan:  # More descriptive job name
+    name: Security Scan
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # (Optional) Set Node.js version explicitly for consistency
+      # - uses: actions/setup-node@v3
+      #   with:
+      #     node-version: 16
+
+      - name: Cache Trivy DB
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/trivy
+          key: ${{ runner.os }}-trivy-db
+          restore-keys: |
+            ${{ runner.os }}-trivy-db
+
+      - name: Run Trivy vulnerability scanner
+        uses: docker://aquasec/aqua-scanner
+        with:
+          args: trivy ${{ inputs.scan-type }} --scanners ${{ inputs.security-checks }} --severity ${{ inputs.severity }} --skip-update --package-json .  # Add --skip-update
+        env:
+          AQUA_KEY: "${{ secrets.aq_key }}"
+          AQUA_SECRET: "${{ secrets.aq_secret }}"
+          AQUA_URL: https://api.supply-chain.cloud.aquasec.com
+          CSPM_URL: https://api.cloudsploit.com
+          TRIVY_RUN_AS_PLUGIN: "aqua"
+          SHOW-SUPPRESSED: "true"
+          REACHABILITY: "true"
+          GITHUB_TOKEN: "${{ github.token }}"
+
+      # (Optional) Add error handling based on scan results
+      # - name: Check for critical vulnerabilities
+      #   if: ${{ failure() && steps.scan.outputs.vulnerabilities }}
+      #   run: |
+      #     echo "Critical vulnerabilities found! Failing the workflow."
+      #     exit 1
+
+      - name: Schedule Trivy DB update
+        run: |
+          0 0 * * * trivy image --download-db-only
