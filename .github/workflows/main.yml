@@ -26,8 +26,6 @@ jobs:
           AQUA_KEY: "${{ secrets.aq_key }}"
           AQUA_SECRET: "${{ secrets.aq_secret }}"
           TRIVY_RUN_AS_PLUGIN: "aqua"
-          PACKAGE_JSON: "1"
-          GRADLE: "true"
           SHOW-SUPPRESSED: "true"
           REACHABILITY: "true"
           GITHUB_TOKEN: "${{ github.token }}"
